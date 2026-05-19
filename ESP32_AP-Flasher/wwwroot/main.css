@@ -1170,9 +1170,15 @@ h4 {
 	}
 
 }
+.staticpeerswrap {
+	/* indent table+add-row so it aligns with the inputs of the other config rows
+	   (global label is width 200px + padding 0 20px = ~240px reserved on the left) */
+	margin-left: 240px;
+	max-width: 480px;
+}
+
 .staticpeersbox {
 	margin: 6px 0;
-	max-width: 480px;
 }
 
 .staticpeersbox table {
