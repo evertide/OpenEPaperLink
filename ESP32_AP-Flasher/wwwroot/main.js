@@ -1018,6 +1018,10 @@ document.addEventListener("loadTab", function (event) {
 						$("#apcdiscovery").value = data.discovery;
 						staticPeers = (data.static_peers || "").split(",").map(s => s.trim()).filter(Boolean);
 						staticPeerLastReply = {};
+						// Backfill: if apitem messages already arrived for these peers (race with HTTP response), seed lastReply from discoveredAPs cache
+						for (const _ip of staticPeers) {
+							if (discoveredAPs[_ip]) staticPeerLastReply[_ip] = discoveredAPs[_ip].lastSeen;
+						}
 						renderStaticPeers();
 						renderStaticPeersAddOptions();
 						refreshPinMarkers();
