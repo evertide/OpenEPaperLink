@@ -13,6 +13,7 @@
 
 #define UDPIP IPAddress(239, 10, 0, 1)
 #define UDPPORT 16033
+#define STATIC_PEERS_MAX 5
 
 UDPcomm udpsync;
 
@@ -43,7 +44,7 @@ void UDPcomm::init() {
     } else {
         if (udp.listen(UDPPORT)) {
             udp.onPacket([this](AsyncUDPPacket packet) {
-                if (packet.isBroadcast() && packet.remoteIP() != wm.localIP()) {
+                if ((packet.isBroadcast() || isStaticPeer(packet.remoteIP())) && packet.remoteIP() != wm.localIP()) {
                     this->processPacket(packet);
                 }
             });
@@ -213,4 +214,42 @@ void UDPcomm::writeUdpPacket(uint8_t *buffer, uint16_t len, IPAddress senderIP) 
     } else {
         udp.broadcastTo(buffer, len, UDPPORT);
     }
+
+    // Additive: unicast to configured static peers, regardless of discovery mode.
+    // This keeps AP-to-AP mesh working even when layer-2 multicast/broadcast is filtered.
+    IPAddress peers[STATIC_PEERS_MAX];
+    int count = parseStaticPeers(peers, STATIC_PEERS_MAX);
+    IPAddress self = wm.localIP();
+    for (int i = 0; i < count; i++) {
+        if (peers[i] != self) {
+            udp.writeTo(buffer, len, peers[i], UDPPORT);
+        }
+    }
+}
+
+int UDPcomm::parseStaticPeers(IPAddress *out, int max) {
+    if (config.static_peers[0] == '\0') return 0;
+    char copy[sizeof(config.static_peers)];
+    strlcpy(copy, config.static_peers, sizeof(copy));
+    char *saveptr = nullptr;
+    char *tok = strtok_r(copy, ",", &saveptr);
+    int n = 0;
+    while (tok && n < max) {
+        while (*tok == ' ' || *tok == '\t') tok++;
+        IPAddress peer;
+        if (peer.fromString(tok)) {
+            out[n++] = peer;
+        }
+        tok = strtok_r(nullptr, ",", &saveptr);
+    }
+    return n;
+}
+
+bool UDPcomm::isStaticPeer(IPAddress ip) {
+    IPAddress peers[STATIC_PEERS_MAX];
+    int count = parseStaticPeers(peers, STATIC_PEERS_MAX);
+    for (int i = 0; i < count; i++) {
+        if (peers[i] == ip) return true;
+    }
+    return false;
 }

@@ -23,6 +23,8 @@ class UDPcomm {
     AsyncUDP udp;
     void processPacket(AsyncUDPPacket packet);
     void writeUdpPacket(uint8_t* buffer, uint16_t len, IPAddress senderIP);
+    int parseStaticPeers(IPAddress* out, int max);
+    bool isStaticPeer(IPAddress ip);
 };
 
 #endif
