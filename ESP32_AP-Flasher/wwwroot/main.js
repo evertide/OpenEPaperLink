@@ -21,7 +21,7 @@ let staticPeers = [];           // array of pinned IPv4 strings
 let discoveredAPs = {};         // ip -> {alias, channel, lastSeen}
 let staticPeerLastReply = {};   // ip -> timestamp (online indicator)
 const STATIC_PEERS_MAX = 5;
-const STATIC_PEER_ONLINE_MS = 60000;
+const STATIC_PEER_ONLINE_MS = 360000; // 6 min - grace above the mesh-monitor 5 min /get_ap_config cycle
 const ipv4Re = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
 
 function recordDiscoveredAP(item) {
@@ -51,7 +51,7 @@ function renderStaticPeers() {
 		const online = lastReply && (now - lastReply < STATIC_PEER_ONLINE_MS);
 		const alias = info.alias ? info.alias : '<span style="opacity:0.5">unknown</span>';
 		const statusText = online ? 'online' : (lastReply ? 'stale' : 'no reply');
-		const statusTitle = online ? 'unicast reply within 60s' : (lastReply ? `last reply ${Math.round((now - lastReply)/1000)}s ago` : 'no unicast reply yet');
+		const statusTitle = online ? `unicast reply within ${STATIC_PEER_ONLINE_MS/1000}s` : (lastReply ? `last reply ${Math.round((now - lastReply)/1000)}s ago` : 'no unicast reply yet');
 		const tr = document.createElement('tr');
 		tr.innerHTML = `<td>${ip}</td><td>${alias}</td><td><span class="peerstatus${online ? ' online' : ''}" title="${statusTitle}"></span>${statusText}</td><td><button type="button" class="pinremove" data-ip="${ip}" title="Remove">✕</button></td>`;
 		tbody.appendChild(tr);
