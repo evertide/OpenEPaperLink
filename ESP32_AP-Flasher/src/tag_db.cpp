@@ -335,6 +335,11 @@ void initAPconfig() {
     config.sleepTime2 = APconfig["sleeptime2"].is<uint8_t>() ? APconfig["sleeptime2"] : 0;
     config.ble = APconfig["ble"].is<uint8_t>() ? APconfig["ble"] : 0;
     config.discovery = APconfig["discovery"].is<uint8_t>() ? APconfig["discovery"] : 0;
+    if (APconfig["static_peers"]) {
+        strlcpy(config.static_peers, APconfig["static_peers"], sizeof(config.static_peers));
+    } else {
+        config.static_peers[0] = '\0';
+    }
     config.showtimestamp = APconfig["showtimestamp"].is<uint8_t>() ? APconfig["showtimestamp"] : 0;
 #ifdef BLE_ONLY
         config.ble = true;
@@ -374,6 +379,7 @@ void saveAPconfig() {
     APconfig["repo"] = config.repo;
     APconfig["env"] = config.env;
     APconfig["discovery"] = config.discovery;
+    APconfig["static_peers"] = config.static_peers;
     APconfig["showtimestamp"] = config.showtimestamp;
     serializeJsonPretty(APconfig, configFile);
     configFile.close();
