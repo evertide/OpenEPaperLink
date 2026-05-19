@@ -480,6 +480,10 @@ options:
 						<option value="1">Broadcast</option>
 					</select>
 				</p>
+				<p title="Comma-separated IPv4 addresses of other AP's to reach via unicast UDP, in addition to the discovery method above. Useful when layer-2 multicast/broadcast is filtered. Max 5 peers.">
+					<label for="apcstaticpeers">Static peer IPs</label>
+					<input type="text" id="apcstaticpeers" placeholder="192.168.2.7,192.168.2.137" autocomplete="off">
+				</p>
 				<p title="Show a timestamp on the screen when the tag is updated">
 					<label for="apcshowtimestamp">Enable timestamp</label>
 					<select id="apcshowtimestamp">

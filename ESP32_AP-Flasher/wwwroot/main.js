@@ -881,6 +881,7 @@ document.addEventListener("loadTab", function (event) {
 						$("#apcnight1").value = data.sleeptime1;
 						$("#apcnight2").value = data.sleeptime2;
 						$("#apcdiscovery").value = data.discovery;
+						$("#apcstaticpeers").value = data.static_peers || "";
 						$("#apcshowtimestamp").value = data.showtimestamp;
 					}
 				})
@@ -902,6 +903,28 @@ document.addEventListener("loadTab", function (event) {
 });
 
 $('#apcfgsave').onclick = function () {
+	const staticPeersRaw = $('#apcstaticpeers').value.trim();
+	let staticPeersNormalized = '';
+	if (staticPeersRaw) {
+		const ips = staticPeersRaw.split(',').map(s => s.trim()).filter(Boolean);
+		const ipv4Re = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
+		for (const ip of ips) {
+			if (!ipv4Re.test(ip)) {
+				$('#apcfgmsg').innerHTML = 'Invalid IPv4 in Static peer IPs: ' + ip;
+				return;
+			}
+		}
+		if (ips.length > 5) {
+			$('#apcfgmsg').innerHTML = 'Static peer IPs: max 5 entries (got ' + ips.length + ')';
+			return;
+		}
+		if (ips.includes(window.location.hostname)) {
+			if (!confirm(window.location.hostname + ' is this AP’s own address. Static peers should be other APs. Continue anyway?')) {
+				return;
+			}
+		}
+		staticPeersNormalized = ips.join(',');
+	}
 	let formData = new FormData();
 	formData.append("alias", $('#apcfgalias').value);
 	formData.append("channel", $('#apcfgchid').value);
@@ -920,6 +943,7 @@ $('#apcfgsave').onclick = function () {
 	formData.append('sleeptime1', $('#apcnight1').value);
 	formData.append('sleeptime2', $('#apcnight2').value);
 	formData.append('discovery', $('#apcdiscovery').value);
+	formData.append('static_peers', staticPeersNormalized);
 	formData.append('showtimestamp', $('#apcshowtimestamp').value);
 	fetch("save_apcfg", {
 		method: "POST",
