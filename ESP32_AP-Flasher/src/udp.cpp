@@ -228,6 +228,7 @@ void UDPcomm::writeUdpPacket(uint8_t *buffer, uint16_t len, IPAddress senderIP) 
 }
 
 int UDPcomm::parseStaticPeers(IPAddress *out, int max) {
+    if (!config.static_peers_enable) return 0;
     if (config.static_peers[0] == '\0') return 0;
     char copy[sizeof(config.static_peers)];
     strlcpy(copy, config.static_peers, sizeof(copy));

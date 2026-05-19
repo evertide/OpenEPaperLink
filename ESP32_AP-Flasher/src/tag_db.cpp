@@ -340,6 +340,12 @@ void initAPconfig() {
     } else {
         config.static_peers[0] = '\0';
     }
+    if (APconfig["static_peers_enable"].is<uint8_t>()) {
+        config.static_peers_enable = APconfig["static_peers_enable"];
+    } else {
+        // V1 -> V2 migration: if the field was never persisted, infer from list state
+        config.static_peers_enable = (config.static_peers[0] != '\0') ? 1 : 0;
+    }
     config.showtimestamp = APconfig["showtimestamp"].is<uint8_t>() ? APconfig["showtimestamp"] : 0;
 #ifdef BLE_ONLY
         config.ble = true;
@@ -380,6 +386,7 @@ void saveAPconfig() {
     APconfig["env"] = config.env;
     APconfig["discovery"] = config.discovery;
     APconfig["static_peers"] = config.static_peers;
+    APconfig["static_peers_enable"] = config.static_peers_enable;
     APconfig["showtimestamp"] = config.showtimestamp;
     serializeJsonPretty(APconfig, configFile);
     configFile.close();

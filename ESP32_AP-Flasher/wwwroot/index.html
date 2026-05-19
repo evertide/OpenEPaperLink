@@ -480,8 +480,15 @@ options:
 						<option value="1">Broadcast</option>
 					</select>
 				</p>
-				<p title="Other APs to reach via unicast UDP in addition to the discovery method above. Useful when layer-2 multicast/broadcast is filtered. Max 5 peers.">
-					<label>Static peers</label>
+				<p title="Enable per-AP unicast pinning of other AP's. Useful when layer-2 multicast/broadcast is filtered by the WiFi infrastructure.">
+					<label for="apcstaticpeersenable">AP Static peers</label>
+					<select id="apcstaticpeersenable">
+						<option value="0" selected>no</option>
+						<option value="1">yes</option>
+					</select>
+				</p>
+				<p id="apcStaticPeersWrapper" title="Other APs to reach via unicast UDP in addition to the discovery method above. Useful when layer-2 multicast/broadcast is filtered. Max 5 peers." style="display:none">
+					<label>AP Static peers list</label>
 					<div id="staticPeersBox" class="staticpeersbox">
 						<table>
 							<thead>

@@ -129,6 +129,11 @@ function addStaticPeer(ip) {
 setInterval(() => { if ($('#staticPeersTbody')) renderStaticPeers(); }, 5000);
 
 window.addEventListener('DOMContentLoaded', () => {
+	const toggle = $('#apcstaticpeersenable');
+	const wrapper = $('#apcStaticPeersWrapper');
+	if (toggle && wrapper) toggle.addEventListener('change', () => {
+		wrapper.style.display = (toggle.value === '1') ? '' : 'none';
+	});
 	const sel = $('#staticPeersAddSelect');
 	const inp = $('#staticPeersAddInput');
 	const btn = $('#staticPeersAddBtn');
@@ -1016,6 +1021,10 @@ document.addEventListener("loadTab", function (event) {
 						$("#apcnight1").value = data.sleeptime1;
 						$("#apcnight2").value = data.sleeptime2;
 						$("#apcdiscovery").value = data.discovery;
+						// Mirror firmware migration: if static_peers_enable was never saved, infer from list emptiness
+						const _spEnable = (data.static_peers_enable != null) ? String(data.static_peers_enable) : ((data.static_peers || '').trim() ? "1" : "0");
+						if ($("#apcstaticpeersenable")) $("#apcstaticpeersenable").value = _spEnable;
+						if ($("#apcStaticPeersWrapper")) $("#apcStaticPeersWrapper").style.display = (_spEnable === "1") ? "" : "none";
 						staticPeers = (data.static_peers || "").split(",").map(s => s.trim()).filter(Boolean);
 						staticPeerLastReply = {};
 						// Backfill: if apitem messages already arrived for these peers (race with HTTP response), seed lastReply from discoveredAPs cache
@@ -1051,7 +1060,9 @@ $('#apcfgsave').onclick = function () {
 		return;
 	}
 	const staticPeersNormalized = staticPeers.join(',');
+	const staticPeersEnable = $('#apcstaticpeersenable') ? $('#apcstaticpeersenable').value : '0';
 	let formData = new FormData();
+	formData.append('static_peers_enable', staticPeersEnable);
 	formData.append("alias", $('#apcfgalias').value);
 	formData.append("channel", $('#apcfgchid').value);
 	formData.append("subghzchannel", $('#apcfgsubgigchid').value);

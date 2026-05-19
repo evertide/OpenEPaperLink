@@ -74,6 +74,7 @@ struct Config {
     uint8_t ble;
     uint8_t discovery;
     char static_peers[128];
+    uint8_t static_peers_enable;
     String repo;
     String env;
     uint8_t showtimestamp;

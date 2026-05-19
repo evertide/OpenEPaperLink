@@ -638,6 +638,9 @@ void init_web() {
         if (request->hasParam("static_peers", true)) {
             strlcpy(config.static_peers, request->getParam("static_peers", true)->value().c_str(), sizeof(config.static_peers));
         }
+        if (request->hasParam("static_peers_enable", true)) {
+            config.static_peers_enable = static_cast<uint8_t>(request->getParam("static_peers_enable", true)->value().toInt());
+        }
         if (request->hasParam("showtimestamp", true)) {
             config.showtimestamp = static_cast<uint8_t>(request->getParam("showtimestamp", true)->value().toInt());
         }
