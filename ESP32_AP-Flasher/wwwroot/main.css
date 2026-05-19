@@ -1170,3 +1170,92 @@ h4 {
 	}
 
 }
+.staticpeersbox {
+	margin: 6px 0;
+	max-width: 480px;
+}
+
+.staticpeersbox table {
+	border-spacing: 1px;
+	width: 100%;
+}
+
+.staticpeersbox th {
+	text-align: left;
+	background-color: var(--color-module-bg);
+	padding: 2px 6px;
+	font-weight: normal;
+	opacity: 0.7;
+}
+
+.staticpeersbox td {
+	background-color: var(--color-module-bg);
+	padding: 2px 6px;
+	vertical-align: middle;
+}
+
+.staticpeersbox td.empty {
+	font-style: italic;
+	opacity: 0.6;
+	text-align: center;
+}
+
+.staticpeersbox .pinremove {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 14px;
+	color: inherit;
+	padding: 0 4px;
+	opacity: 0.6;
+}
+.staticpeersbox .pinremove:hover {
+	opacity: 1;
+	color: #d62828;
+}
+
+.staticpeersadd {
+	margin-top: 4px;
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.staticpeersadd select,
+.staticpeersadd input[type=text] {
+	flex: 1;
+	min-width: 140px;
+}
+
+.staticpeersadd button {
+	padding: 3px 10px;
+	background-color: var(--color-button-bg);
+	border: none;
+	cursor: pointer;
+}
+.staticpeersadd button:hover {
+	background-color: var(--color-button-hover-bg);
+}
+
+.staticpeersadd #staticPeersAddMsg {
+	color: #d62828;
+	font-size: 0.9em;
+}
+
+.peerstatus {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background-color: #888;
+	margin-right: 6px;
+	vertical-align: middle;
+}
+.peerstatus.online {
+	background-color: #2ecc71;
+}
+
+.apcard .pinmarker {
+	margin-right: 4px;
+}

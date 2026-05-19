@@ -15,6 +15,140 @@ const WAKEUP_REASON_WDT_RESET = 0xFE;
 let tagTypes = {};
 let apConfig = {};
 let tagDB = {};
+
+// --- static_peers V2 state + helpers ---
+let staticPeers = [];           // array of pinned IPv4 strings
+let discoveredAPs = {};         // ip -> {alias, channel, lastSeen}
+let staticPeerLastReply = {};   // ip -> timestamp (online indicator)
+const STATIC_PEERS_MAX = 5;
+const STATIC_PEER_ONLINE_MS = 60000;
+const ipv4Re = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
+
+function recordDiscoveredAP(item) {
+	const ip = item.ip;
+	if (!ip || ip === '0.0.0.0') return;
+	const now = Date.now();
+	discoveredAPs[ip] = { alias: item.alias || '', channel: item.channel, lastSeen: now };
+	if (staticPeers.includes(ip)) staticPeerLastReply[ip] = now;
+	if ($('#staticPeersBox')) {
+		renderStaticPeers();
+		renderStaticPeersAddOptions();
+	}
+}
+
+function renderStaticPeers() {
+	const tbody = $('#staticPeersTbody');
+	if (!tbody) return;
+	tbody.innerHTML = '';
+	if (staticPeers.length === 0) {
+		tbody.innerHTML = '<tr><td colspan="4" class="empty">no static peers configured</td></tr>';
+		return;
+	}
+	const now = Date.now();
+	for (const ip of staticPeers) {
+		const info = discoveredAPs[ip] || {};
+		const lastReply = staticPeerLastReply[ip];
+		const online = lastReply && (now - lastReply < STATIC_PEER_ONLINE_MS);
+		const alias = info.alias ? info.alias : '<span style="opacity:0.5">unknown</span>';
+		const statusText = online ? 'online' : (lastReply ? 'stale' : 'no reply');
+		const statusTitle = online ? 'unicast reply within 60s' : (lastReply ? `last reply ${Math.round((now - lastReply)/1000)}s ago` : 'no unicast reply yet');
+		const tr = document.createElement('tr');
+		tr.innerHTML = `<td>${ip}</td><td>${alias}</td><td><span class="peerstatus${online ? ' online' : ''}" title="${statusTitle}"></span>${statusText}</td><td><button type="button" class="pinremove" data-ip="${ip}" title="Remove">✕</button></td>`;
+		tbody.appendChild(tr);
+	}
+	tbody.querySelectorAll('.pinremove').forEach(btn => {
+		btn.onclick = function() {
+			const ip = this.dataset.ip;
+			staticPeers = staticPeers.filter(p => p !== ip);
+			delete staticPeerLastReply[ip];
+			renderStaticPeers();
+			renderStaticPeersAddOptions();
+			refreshPinMarkers();
+		};
+	});
+}
+
+function renderStaticPeersAddOptions() {
+	const sel = $('#staticPeersAddSelect');
+	if (!sel) return;
+	const currentVal = sel.value;
+	while (sel.options.length > 2) sel.remove(2);
+	const candidates = Object.keys(discoveredAPs)
+		.filter(ip => !staticPeers.includes(ip) && ip !== window.location.hostname)
+		.sort();
+	for (const ip of candidates) {
+		const opt = document.createElement('option');
+		opt.value = ip;
+		const alias = discoveredAPs[ip].alias;
+		opt.text = alias ? `${ip} (${alias})` : ip;
+		sel.appendChild(opt);
+	}
+	if ([...sel.options].some(o => o.value === currentVal)) sel.value = currentVal;
+}
+
+function refreshPinMarkers() {
+	document.querySelectorAll('#aplist .apcard').forEach(card => {
+		if (card.id === 'apcard') return;
+		const apip = card.id.replace(/^ap/, '').replace(/-/g, '.');
+		const marker = card.querySelector('.pinmarker');
+		if (staticPeers.includes(apip)) {
+			if (!marker) {
+				const span = document.createElement('span');
+				span.className = 'pinmarker';
+				span.textContent = '📌';
+				span.title = 'static peer';
+				card.insertBefore(span, card.firstChild);
+			}
+		} else if (marker) {
+			marker.remove();
+		}
+	});
+}
+
+function addStaticPeer(ip) {
+	ip = (ip || '').trim();
+	const msg = $('#staticPeersAddMsg');
+	if (msg) msg.innerHTML = '';
+	if (!ip) { if (msg) msg.innerHTML = 'enter or pick an IP first'; return; }
+	if (!ipv4Re.test(ip)) { if (msg) msg.innerHTML = 'not a valid IPv4 address'; return; }
+	if (staticPeers.includes(ip)) { if (msg) msg.innerHTML = 'already pinned'; return; }
+	if (staticPeers.length >= STATIC_PEERS_MAX) { if (msg) msg.innerHTML = `max ${STATIC_PEERS_MAX} peers`; return; }
+	if (ip === window.location.hostname) {
+		if (!confirm(`${ip} is this AP's own address. Static peers should be other APs. Continue anyway?`)) return;
+	}
+	staticPeers.push(ip);
+	renderStaticPeers();
+	renderStaticPeersAddOptions();
+	refreshPinMarkers();
+	const sel = $('#staticPeersAddSelect');
+	const inp = $('#staticPeersAddInput');
+	if (sel) { sel.value = ''; sel.style.display = ''; }
+	if (inp) { inp.value = ''; inp.style.display = 'none'; }
+}
+
+setInterval(() => { if ($('#staticPeersTbody')) renderStaticPeers(); }, 5000);
+
+window.addEventListener('DOMContentLoaded', () => {
+	const sel = $('#staticPeersAddSelect');
+	const inp = $('#staticPeersAddInput');
+	const btn = $('#staticPeersAddBtn');
+	if (sel) sel.onchange = function() {
+		if (sel.value === '__manual__') {
+			sel.style.display = 'none';
+			inp.style.display = '';
+			inp.focus();
+		}
+	};
+	if (btn) btn.onclick = function() {
+		let ip;
+		if (inp && inp.style.display !== 'none' && inp.value.trim()) ip = inp.value.trim();
+		else if (sel && sel.value && sel.value !== '__manual__') ip = sel.value;
+		else { $('#staticPeersAddMsg').innerHTML = 'pick a peer or click Add manually'; return; }
+		addStaticPeer(ip);
+	};
+	if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); btn.click(); } });
+});
+// --- end static_peers V2 ---
 const previewWindows = [];
 
 const apstate = [
@@ -280,6 +414,7 @@ function connect() {
 			servertimediff = (Date.now() / 1000) - msg.sys.currtime;
 		}
 		if (msg.apitem) {
+			recordDiscoveredAP(msg.apitem);
 			populateAPCard(msg.apitem);
 		}
 		if (msg.console) {
@@ -881,7 +1016,11 @@ document.addEventListener("loadTab", function (event) {
 						$("#apcnight1").value = data.sleeptime1;
 						$("#apcnight2").value = data.sleeptime2;
 						$("#apcdiscovery").value = data.discovery;
-						$("#apcstaticpeers").value = data.static_peers || "";
+						staticPeers = (data.static_peers || "").split(",").map(s => s.trim()).filter(Boolean);
+						staticPeerLastReply = {};
+						renderStaticPeers();
+						renderStaticPeersAddOptions();
+						refreshPinMarkers();
 						$("#apcshowtimestamp").value = data.showtimestamp;
 					}
 				})
@@ -903,28 +1042,11 @@ document.addEventListener("loadTab", function (event) {
 });
 
 $('#apcfgsave').onclick = function () {
-	const staticPeersRaw = $('#apcstaticpeers').value.trim();
-	let staticPeersNormalized = '';
-	if (staticPeersRaw) {
-		const ips = staticPeersRaw.split(',').map(s => s.trim()).filter(Boolean);
-		const ipv4Re = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
-		for (const ip of ips) {
-			if (!ipv4Re.test(ip)) {
-				$('#apcfgmsg').innerHTML = 'Invalid IPv4 in Static peer IPs: ' + ip;
-				return;
-			}
-		}
-		if (ips.length > 5) {
-			$('#apcfgmsg').innerHTML = 'Static peer IPs: max 5 entries (got ' + ips.length + ')';
-			return;
-		}
-		if (ips.includes(window.location.hostname)) {
-			if (!confirm(window.location.hostname + ' is this AP’s own address. Static peers should be other APs. Continue anyway?')) {
-				return;
-			}
-		}
-		staticPeersNormalized = ips.join(',');
+	if (staticPeers.length > STATIC_PEERS_MAX) {
+		$('#apcfgmsg').innerHTML = `Static peers: max ${STATIC_PEERS_MAX} entries (got ${staticPeers.length})`;
+		return;
 	}
+	const staticPeersNormalized = staticPeers.join(',');
 	let formData = new FormData();
 	formData.append("alias", $('#apcfgalias').value);
 	formData.append("channel", $('#apcfgchid').value);
@@ -1875,6 +1997,22 @@ function populateAPCard(msg) {
 	$('#ap' + apid + ' .apalias').innerHTML = alias;
 	$('#ap' + apid + ' .aptagcount').innerHTML = msg.count;
 	$('#ap' + apid + ' .apchannel').innerHTML = msg.channel;
+
+	// V2: pin marker for static peers
+	const _card = $('#ap' + apid);
+	const _ipEl = _card.querySelector('.apip');
+	let _marker = _card.querySelector('.pinmarker');
+	if (staticPeers.includes(apip)) {
+		if (!_marker) {
+			_marker = document.createElement('span');
+			_marker.className = 'pinmarker';
+			_marker.textContent = '📌';
+			_marker.title = 'static peer';
+			_ipEl.insertBefore(_marker, _ipEl.firstChild);
+		}
+	} else if (_marker) {
+		_marker.remove();
+	}
 
 	const elements = document.querySelectorAll('.apchannel');
 	Array.from(elements).forEach(element => {
