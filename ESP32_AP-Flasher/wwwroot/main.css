@@ -1173,7 +1173,7 @@ h4 {
 .staticpeerswrap {
 	/* indent table+add-row so it aligns with the inputs of the other config rows
 	   (label is width 200px with box-sizing: border-box; sibling <p> has padding-left 3px) */
-	margin-left: 203px;
+	margin-left: 207px;
 	max-width: 480px;
 }
 
